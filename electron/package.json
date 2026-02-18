@@ -1,0 +1,8 @@
+{
+  "name": "fan-score-desktop",
+  "version": "1.0.0",
+  "description": "Fan Score - デスクトップアプリ",
+  "main": "main.js",
+  "author": "Fan Score Team",
+  "license": "MIT"
+}
