@@ -1,17 +1,23 @@
 {
   "name": "fan-score",
-  "version": "0.1.0",
+  "version": "1.0.0-beta",
+  "description": "Fan Score - お客様ロイヤリティ管理アプリ",
+  "author": "Fan Score Team",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "npx prisma db seed",
     "db:reset": "npx prisma migrate reset",
     "electron:dev": "electron electron/main.js",
-    "electron:build": "electron-builder --win --config electron-builder.yml"
+    "electron:prepare": "node scripts/build-electron.js",
+    "electron:pack": "electron-builder --win --config electron-builder.yml",
+    "electron:build": "node scripts/build-electron.js && electron-builder --win --config electron-builder.yml"
   },
   "prisma": {
     "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

@@ -31,7 +31,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Search, Users } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { AREA_LABELS, PHYSICAL_AREAS, type Area } from "@/lib/constants";
+import { TierBadge } from "@/components/tier-badge";
+import Link from "next/link";
 
 interface Fan {
   id: string;
@@ -41,8 +44,16 @@ interface Fan {
   createdAt: string;
 }
 
+interface TierInfo {
+  name: string;
+  slug: string;
+  color: string;
+  icon: string;
+}
+
 export default function FansPage() {
   const [fans, setFans] = useState<Fan[]>([]);
+  const [fanTiers, setFanTiers] = useState<Record<string, TierInfo | null>>({});
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,6 +74,19 @@ export default function FansPage() {
       const res = await fetch(`/api/fans?${params}`);
       const data = await res.json();
       setFans(data);
+
+      // Fetch tier info from ranking API (cumulative mode gives us tiers)
+      try {
+        const rankRes = await fetch("/api/ranking?mode=cumulative");
+        const rankData = await rankRes.json();
+        const tierMap: Record<string, TierInfo | null> = {};
+        for (const r of rankData) {
+          tierMap[r.fanId] = r.tier ?? null;
+        }
+        setFanTiers(tierMap);
+      } catch {
+        // Tier info is optional, don't block the page
+      }
     } catch {
       toast.error("ファンの取得に失敗しました");
     } finally {
@@ -92,7 +116,7 @@ export default function FansPage() {
 
   const handleSubmit = async () => {
     if (!formData.displayName.trim()) {
-      toast.error("表示名は必須です");
+      toast.error("お名前は必須です");
       return;
     }
     if (!formData.residenceArea) {
@@ -143,20 +167,20 @@ export default function FansPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-6 w-6" />
-            ファン管理
+            <Users className="h-6 w-6 text-violet-500" />
+            お客様一覧
           </h1>
-          <p className="text-muted-foreground">
-            ファンの登録・編集・削除
+          <p className="text-muted-foreground mt-0.5">
+            お客様の登録・編集・管理
           </p>
         </div>
         <Button onClick={openCreateDialog} className="gap-2">
           <Plus className="h-4 w-4" />
-          新規登録
+          お客様を追加
         </Button>
       </div>
 
-      <Card>
+      <Card className="card-elevated">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-muted-foreground" />
@@ -180,17 +204,27 @@ export default function FansPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>名前</TableHead>
+                    <TableHead>お名前</TableHead>
+                    <TableHead className="w-28">ティア</TableHead>
                     <TableHead>居住エリア</TableHead>
                     <TableHead className="hidden md:table-cell">メモ</TableHead>
+                    <TableHead className="hidden md:table-cell">登録日</TableHead>
                     <TableHead className="w-24">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {fans.map((fan) => (
-                    <TableRow key={fan.id}>
+                    <TableRow key={fan.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium">
-                        {fan.displayName}
+                        <Link
+                          href={`/fans/${fan.id}`}
+                          className="hover:underline text-primary hover:text-primary/80 transition-colors"
+                        >
+                          {fan.displayName} 様
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <TierBadge tier={fanTiers[fan.id] ?? null} size="sm" />
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
@@ -199,6 +233,9 @@ export default function FansPage() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                         {fan.memo || "-"}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-sm whitespace-nowrap">
+                        {format(new Date(fan.createdAt), "yyyy/MM/dd")}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
@@ -235,19 +272,19 @@ export default function FansPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingFan ? "ファン編集" : "ファン新規登録"}
+              {editingFan ? "お客様情報の編集" : "お客様の新規登録"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="displayName">表示名 *</Label>
+              <Label htmlFor="displayName">お名前 *</Label>
               <Input
                 id="displayName"
                 value={formData.displayName}
                 onChange={(e) =>
                   setFormData({ ...formData, displayName: e.target.value })
                 }
-                placeholder="例: タロウ"
+                placeholder="例: 山田 太郎"
                 autoFocus
               />
             </div>
@@ -302,8 +339,8 @@ export default function FansPage() {
             <DialogTitle>削除確認</DialogTitle>
           </DialogHeader>
           <p>
-            <strong>{deletingFan?.displayName}</strong>{" "}
-            を削除しますか？関連するログも全て削除されます。
+            <strong>{deletingFan?.displayName} 様</strong>
+            を削除しますか？関連する記録も全て削除されます。
           </p>
           <DialogFooter>
             <Button

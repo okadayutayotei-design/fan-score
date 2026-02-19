@@ -1,18 +1,25 @@
 appId: com.fanscore.desktop
 productName: Fan Score
+copyright: "Copyright © 2025 Fan Score"
+
 directories:
   output: dist-electron
+  app: dist-app
+
 files:
-  - electron/**/*
+  - "**/*"
+  - ".next/**/*"
+
+# asar無効（Next.jsはファイルシステムアクセスが必要）
+asar: false
+
+# node_modulesの自動処理を無効化（standaloneに既に含まれている）
+npmRebuild: false
+nodeGypRebuild: false
+
 win:
   target:
-    - target: nsis
+    - target: dir
       arch:
         - x64
-  icon: electron/icon.png
-nsis:
-  oneClick: true
-  allowToChangeInstallationDirectory: false
-  createDesktopShortcut: true
-  createStartMenuShortcut: true
-  shortcutName: Fan Score
+  signAndEditExecutable: false

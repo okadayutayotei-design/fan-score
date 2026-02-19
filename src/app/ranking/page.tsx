@@ -17,6 +17,8 @@ import { Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { AREA_LABELS, type Area } from "@/lib/constants";
+import { TierBadge } from "@/components/tier-badge";
+import Link from "next/link";
 
 interface RankedFan {
   rank: number;
@@ -27,29 +29,37 @@ interface RankedFan {
   actionScore: number;
   moneyScore: number;
   travelContribution: number;
+  cumulativeTotalScore: number;
+  salesAmount: number;
+  tier: {
+    name: string;
+    slug: string;
+    color: string;
+    icon: string;
+  } | null;
 }
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1)
     return (
-      <span className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-bold text-sm">
+      <span className="w-9 h-9 rounded-full bg-yellow-400 text-yellow-900 flex items-center justify-center font-bold text-sm shadow-sm">
         1
       </span>
     );
   if (rank === 2)
     return (
-      <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-sm">
+      <span className="w-9 h-9 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center font-bold text-sm shadow-sm">
         2
       </span>
     );
   if (rank === 3)
     return (
-      <span className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">
+      <span className="w-9 h-9 rounded-full bg-orange-400 text-orange-900 flex items-center justify-center font-bold text-sm shadow-sm">
         3
       </span>
     );
   return (
-    <span className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
+    <span className="w-9 h-9 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
       {rank}
     </span>
   );
@@ -61,11 +71,15 @@ export default function RankingPage() {
   const [ranking, setRanking] = useState<RankedFan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("total");
+  const [mode, setMode] = useState<"monthly" | "cumulative">("monthly");
 
   const fetchRanking = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/ranking?month=${month}`);
+      const params = mode === "cumulative"
+        ? `?mode=cumulative`
+        : `?month=${month}`;
+      const res = await fetch(`/api/ranking${params}`);
       const data = await res.json();
       setRanking(data);
     } catch {
@@ -73,7 +87,7 @@ export default function RankingPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [month]);
+  }, [month, mode]);
 
   useEffect(() => {
     fetchRanking();
@@ -94,23 +108,6 @@ export default function RankingPage() {
   });
 
   // Re-assign ranks based on current sort
-  const reranked = sortedRanking.map((item, idx) => {
-    const scoreKey =
-      activeTab === "travel"
-        ? "travelContribution"
-        : activeTab === "money"
-        ? "moneyScore"
-        : activeTab === "action"
-        ? "actionScore"
-        : "totalScore";
-    let rank = idx + 1;
-    if (idx > 0 && item[scoreKey] === sortedRanking[idx - 1][scoreKey]) {
-      rank = reranked[idx - 1]?.displayRank ?? idx + 1;
-    }
-    return { ...item, displayRank: rank };
-  });
-
-  // Fix rank assignment with proper reference
   const finalRanking: (RankedFan & { displayRank: number })[] = [];
   for (let i = 0; i < sortedRanking.length; i++) {
     const item = sortedRanking[i];
@@ -130,29 +127,59 @@ export default function RankingPage() {
   }
 
   const [yyyy, mm] = month.split("-");
-  const monthLabel = `${yyyy}年${parseInt(mm)}月`;
+  const monthLabel = mode === "cumulative"
+    ? "累積（通算）"
+    : `${yyyy}年${parseInt(mm)}月`;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Trophy className="h-6 w-6" />
-          月次ランキング
+          <Trophy className="h-6 w-6 text-amber-500" />
+          ランキング
         </h1>
-        <p className="text-muted-foreground">{monthLabel}のファンスコア</p>
+        <p className="text-muted-foreground mt-0.5">{monthLabel}のファンスコア</p>
       </div>
 
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-medium">月選択:</label>
-        <Input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="w-48"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Mode Toggle - larger and more colorful */}
+        <div className="flex rounded-xl border-2 overflow-hidden">
+          <button
+            className={`px-5 py-2 text-sm font-semibold transition-all duration-200 ${
+              mode === "monthly"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "hover:bg-muted text-muted-foreground"
+            }`}
+            onClick={() => setMode("monthly")}
+          >
+            月次
+          </button>
+          <button
+            className={`px-5 py-2 text-sm font-semibold transition-all duration-200 ${
+              mode === "cumulative"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "hover:bg-muted text-muted-foreground"
+            }`}
+            onClick={() => setMode("cumulative")}
+          >
+            累計
+          </button>
+        </div>
+
+        {mode === "monthly" && (
+          <>
+            <label className="text-sm font-medium">月選択:</label>
+            <Input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="w-48"
+            />
+          </>
+        )}
       </div>
 
-      <Card>
+      <Card className="card-elevated">
         <CardContent className="pt-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
@@ -168,7 +195,9 @@ export default function RankingPage() {
               </p>
             ) : finalRanking.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">
-                この月のデータはありません
+                {mode === "cumulative"
+                  ? "データがありません"
+                  : "この月のデータはありません"}
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -176,7 +205,10 @@ export default function RankingPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-16">順位</TableHead>
-                      <TableHead>ファン</TableHead>
+                      <TableHead>お客様名</TableHead>
+                      <TableHead className="hidden md:table-cell w-28">
+                        ティア
+                      </TableHead>
                       <TableHead className="hidden md:table-cell">
                         居住地
                       </TableHead>
@@ -188,6 +220,9 @@ export default function RankingPage() {
                           : activeTab === "travel"
                           ? "遠征貢献"
                           : "支払いスコア"}
+                      </TableHead>
+                      <TableHead className="text-right">
+                        売上金額
                       </TableHead>
                       {activeTab === "total" && (
                         <>
@@ -205,44 +240,76 @@ export default function RankingPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {finalRanking.map((fan) => (
-                      <TableRow key={fan.fanId}>
-                        <TableCell>
-                          <RankBadge rank={fan.displayRank} />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {fan.displayName}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Badge variant="outline">
-                            {AREA_LABELS[fan.residenceArea as Area] ??
-                              fan.residenceArea}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-bold">
-                          {activeTab === "total"
-                            ? fan.totalScore.toFixed(1)
-                            : activeTab === "action"
-                            ? fan.actionScore.toFixed(1)
-                            : activeTab === "travel"
-                            ? fan.travelContribution.toFixed(1)
-                            : fan.moneyScore.toFixed(1)}
-                        </TableCell>
-                        {activeTab === "total" && (
-                          <>
-                            <TableCell className="text-right text-muted-foreground hidden sm:table-cell">
-                              {fan.actionScore.toFixed(1)}
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground hidden sm:table-cell">
-                              {fan.moneyScore.toFixed(1)}
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground hidden lg:table-cell">
-                              {fan.travelContribution.toFixed(1)}
-                            </TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    ))}
+                    {finalRanking.map((fan) => {
+                      const isTop3 = fan.displayRank <= 3;
+                      const rowBg =
+                        fan.displayRank === 1
+                          ? "bg-gradient-to-r from-yellow-50/80 to-transparent"
+                          : fan.displayRank === 2
+                          ? "bg-gradient-to-r from-slate-50/80 to-transparent"
+                          : fan.displayRank === 3
+                          ? "bg-gradient-to-r from-orange-50/80 to-transparent"
+                          : "";
+                      return (
+                        <TableRow
+                          key={fan.fanId}
+                          className={`transition-colors hover:bg-muted/30 ${isTop3 ? rowBg : ""}`}
+                        >
+                          <TableCell>
+                            <RankBadge rank={fan.displayRank} />
+                          </TableCell>
+                          <TableCell>
+                            <Link
+                              href={`/fans/${fan.fanId}`}
+                              className="font-semibold hover:underline text-primary hover:text-primary/80 transition-colors"
+                            >
+                              {fan.displayName} 様
+                            </Link>
+                            {/* Mobile: show tier inline */}
+                            <div className="md:hidden mt-1">
+                              <TierBadge tier={fan.tier} size="sm" />
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <TierBadge tier={fan.tier} size="sm" />
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <Badge variant="outline">
+                              {AREA_LABELS[fan.residenceArea as Area] ??
+                                fan.residenceArea}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-lg text-primary">
+                            {activeTab === "total"
+                              ? fan.totalScore.toFixed(1)
+                              : activeTab === "action"
+                              ? fan.actionScore.toFixed(1)
+                              : activeTab === "travel"
+                              ? fan.travelContribution.toFixed(1)
+                              : fan.moneyScore.toFixed(1)}
+                            <span className="text-xs font-normal ml-0.5">pt</span>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-base text-emerald-600">
+                            {fan.salesAmount > 0
+                              ? `¥${fan.salesAmount.toLocaleString()}`
+                              : "-"}
+                          </TableCell>
+                          {activeTab === "total" && (
+                            <>
+                              <TableCell className="text-right text-muted-foreground hidden sm:table-cell">
+                                {fan.actionScore.toFixed(1)}
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground hidden sm:table-cell">
+                                {fan.moneyScore.toFixed(1)}
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground hidden lg:table-cell">
+                                {fan.travelContribution.toFixed(1)}
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

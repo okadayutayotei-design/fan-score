@@ -87,7 +87,7 @@ export default function LogsPage() {
     }
     const headers = [
       "日付",
-      "ファン名",
+      "お客様名",
       "居住地",
       "種別",
       "会場",
@@ -127,9 +127,9 @@ export default function LogsPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ClipboardList className="h-6 w-6" />
-            参加ログ一覧
+            売上記録
           </h1>
-          <p className="text-muted-foreground">{logs.length}件のログ</p>
+          <p className="text-muted-foreground">{logs.length}件の記録</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportCSV} className="gap-2">
@@ -162,7 +162,7 @@ export default function LogsPage() {
             <p className="text-center py-8 text-muted-foreground">読み込み中...</p>
           ) : logs.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">
-              この月のログはありません
+              この月の記録はありません
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -170,10 +170,9 @@ export default function LogsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>日付</TableHead>
-                    <TableHead>ファン</TableHead>
+                    <TableHead>お客様名</TableHead>
                     <TableHead>種別</TableHead>
                     <TableHead className="hidden md:table-cell">会場</TableHead>
-                    <TableHead className="text-right">回数</TableHead>
                     <TableHead className="text-right hidden sm:table-cell">
                       物販
                     </TableHead>
@@ -190,7 +189,7 @@ export default function LogsPage() {
                         {format(new Date(log.date), "MM/dd")}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {log.fan.displayName}
+                        {log.fan.displayName} 様
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="whitespace-nowrap">
@@ -200,9 +199,6 @@ export default function LogsPage() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {AREA_LABELS[log.venueArea as Area] ?? log.venueArea}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {log.attendCount}
                       </TableCell>
                       <TableCell className="text-right hidden sm:table-cell">
                         {log.merchAmountJPY > 0
@@ -238,15 +234,15 @@ export default function LogsPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>ログ削除確認</DialogTitle>
+            <DialogTitle>記録の削除確認</DialogTitle>
           </DialogHeader>
           <p>
             {deletingLog && (
               <>
                 {format(new Date(deletingLog.date), "MM/dd")}{" "}
-                {deletingLog.fan.displayName}の
+                {deletingLog.fan.displayName} 様の
                 {EVENT_TYPE_LABELS[deletingLog.eventType as EventType]}
-                ログを削除しますか？
+                記録を削除しますか？
               </>
             )}
           </p>

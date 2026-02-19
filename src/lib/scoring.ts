@@ -214,6 +214,19 @@ export function calculateMonthlyScores(
   return results;
 }
 
+/**
+ * Calculate cumulative (all-time) scores.
+ * Reuses calculateMonthlyScores since it processes whatever logs are passed in.
+ */
+export function calculateCumulativeScores(
+  logs: EventLogEntry[],
+  fans: { id: string; displayName: string; residenceArea: string }[],
+  settings: ScoringSettings,
+  multipliers: AreaMultiplierMap
+): FanScoreResult[] {
+  return calculateMonthlyScores(logs, fans, settings, multipliers);
+}
+
 export function assignRanks(results: FanScoreResult[]): (FanScoreResult & { rank: number })[] {
   let currentRank = 1;
   return results.map((result, index) => {

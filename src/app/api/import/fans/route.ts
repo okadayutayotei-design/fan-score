@@ -129,14 +129,19 @@ export async function POST(request: Request) {
     }
 
     // 一括作成
-    const result = await prisma.fan.createMany({
-      data: validFans,
-      skipDuplicates: true,
-    });
+    let createdCount = 0;
+    for (const fan of validFans) {
+      try {
+        await prisma.fan.create({ data: fan });
+        createdCount++;
+      } catch {
+        // Skip duplicates
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      created: result.count,
+      created: createdCount,
       total: validFans.length,
     });
   } catch (error) {

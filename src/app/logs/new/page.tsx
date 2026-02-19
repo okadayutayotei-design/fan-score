@@ -118,14 +118,17 @@ export default function NewLogPage() {
       return;
     }
     if (!formData.fanId) {
-      toast.error("ファンを選択してください");
+      toast.error("お客様を選択してください");
       return;
     }
     if (!formData.eventType) {
       toast.error("イベント種別を選択してください");
       return;
     }
-    if (!formData.venueArea) {
+    // オンラインイベントの場合は自動的にOnlineを設定
+    const isOnline = isOnlineEvent(formData.eventType);
+    const venueArea = isOnline ? "Online" : formData.venueArea;
+    if (!venueArea) {
       toast.error("会場エリアを選択してください");
       return;
     }
@@ -153,7 +156,7 @@ export default function NewLogPage() {
           date: formData.date,
           fanId: formData.fanId,
           eventType: formData.eventType,
-          venueArea: formData.venueArea,
+          venueArea,
           attendCount,
           merchAmountJPY: merchAmount,
           superchatAmountJPY: superchatAmount,
@@ -168,7 +171,7 @@ export default function NewLogPage() {
 
       setSavedCount((c) => c + 1);
       toast.success(
-        `ログを保存しました (${selectedFan?.displayName}) — 連続${savedCount + 1}件目`
+        `記録を保存しました (${selectedFan?.displayName} 様) — 連続${savedCount + 1}件目`
       );
       resetForm();
     } catch (e: unknown) {
@@ -183,10 +186,10 @@ export default function NewLogPage() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <ClipboardList className="h-6 w-6" />
-          参加ログ追加
+          売上記録の追加
         </h1>
         <p className="text-muted-foreground">
-          イベント参加・視聴ログを入力
+          イベント参加・視聴・売上を記録
           {savedCount > 0 && (
             <span className="ml-2 text-green-600 font-medium">
               ({savedCount}件保存済み)
@@ -214,7 +217,7 @@ export default function NewLogPage() {
 
             {/* Fan selection with autocomplete */}
             <div>
-              <Label>ファン *</Label>
+              <Label>お客様 *</Label>
               <Popover open={fanOpen} onOpenChange={setFanOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -224,11 +227,11 @@ export default function NewLogPage() {
                     className="w-full justify-between"
                   >
                     {selectedFan
-                      ? `${selectedFan.displayName} (${
+                      ? `${selectedFan.displayName} 様 (${
                           AREA_LABELS[selectedFan.residenceArea as Area] ??
                           selectedFan.residenceArea
                         })`
-                      : "ファンを選択..."}
+                      : "お客様を選択..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -255,7 +258,7 @@ export default function NewLogPage() {
                                   : "opacity-0"
                               )}
                             />
-                            {fan.displayName}
+                            {fan.displayName} 様
                             <span className="ml-auto text-xs text-muted-foreground">
                               {AREA_LABELS[fan.residenceArea as Area] ??
                                 fan.residenceArea}
@@ -319,20 +322,6 @@ export default function NewLogPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Attend count */}
-            <div>
-              <Label htmlFor="attendCount">参加回数</Label>
-              <Input
-                id="attendCount"
-                type="number"
-                min="1"
-                value={formData.attendCount}
-                onChange={(e) =>
-                  setFormData({ ...formData, attendCount: e.target.value })
-                }
-              />
             </div>
 
             {/* Merch Amount */}

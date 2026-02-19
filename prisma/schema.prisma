@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Fan {
@@ -57,4 +58,35 @@ model AreaMultiplier {
 
   @@unique([fromArea, toArea])
   @@index([fromArea, toArea])
+}
+
+model Tier {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  color       String
+  icon        String
+  minScore    Float
+  sortOrder   Int
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  benefits    TierBenefit[]
+
+  @@index([minScore])
+  @@index([sortOrder])
+}
+
+model TierBenefit {
+  id          String   @id @default(cuid())
+  tierId      String
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tier Tier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+
+  @@index([tierId])
 }
