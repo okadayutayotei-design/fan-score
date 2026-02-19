@@ -11,7 +11,7 @@ const geistSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Fan Score",
+  title: "O.M.E FanScore",
   description: "ファン貢献度ポイント管理システム",
 };
 
@@ -26,7 +26,7 @@ export default function RootLayout({
         <div className="flex min-h-screen">
           <Sidebar />
           <main className="flex-1 overflow-auto">
-            <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+            <div className="container mx-auto p-4 pt-2 md:p-6 max-w-7xl">
               {children}
             </div>
           </main>

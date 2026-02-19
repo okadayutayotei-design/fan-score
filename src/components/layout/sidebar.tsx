@@ -38,7 +38,7 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <div>
-            <span className="font-bold text-lg leading-none block">Fan Score</span>
+            <span className="font-bold text-lg leading-none block">O.M.E FanScore</span>
             <span className="text-[10px] text-muted-foreground leading-none">ファンスコア管理</span>
           </div>
         </Link>
@@ -73,7 +73,7 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
       {/* Footer */}
       <div className="p-4 border-t">
         <p className="text-[10px] text-muted-foreground text-center">
-          Fan Score v1.0
+          O.M.E FanScore v1.0
         </p>
       </div>
     </div>
@@ -101,10 +101,10 @@ export function Sidebar() {
           <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold">Fan Score</span>
+          <span className="font-bold">O.M.E FanScore</span>
         </div>
       </div>
-      <div className="md:hidden h-14" />
+      <div className="md:hidden h-16" />
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-card">

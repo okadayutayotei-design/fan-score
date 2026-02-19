@@ -311,9 +311,9 @@ export default async function DashboardPage() {
                 </Button>
               </Link>
               <Link href="/fans" className="block">
-                <Button className="w-full justify-start gap-2 h-11" variant="outline">
-                  <Users className="h-4 w-4 text-violet-500" />
-                  お客様一覧・追加
+                <Button className="w-full justify-start gap-1.5 h-11 text-xs sm:text-sm px-2 sm:px-3" variant="outline">
+                  <Users className="h-4 w-4 text-violet-500 flex-shrink-0" />
+                  <span className="truncate">お客様一覧・追加</span>
                 </Button>
               </Link>
               <Link href="/ranking" className="block">
