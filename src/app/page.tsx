@@ -163,13 +163,12 @@ export default async function DashboardPage() {
                 <card.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${card.iconColor}`} />
               </CardHeader>
               <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                {card.key !== "settings" && (
-                  <div className="text-2xl sm:text-3xl font-bold">{
-                    card.key === "fans" ? fanCount :
-                    card.key === "logs" ? logCount :
-                    "+"
-                  }</div>
-                )}
+                <div className="text-2xl sm:text-3xl font-bold">{
+                  card.key === "fans" ? fanCount :
+                  card.key === "logs" ? logCount :
+                  card.key === "participants" ? "+" :
+                  "\u00A0"
+                }</div>
               </CardContent>
             </Card>
           </Link>
