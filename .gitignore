@@ -50,5 +50,8 @@ prisma/dev.db-journal
 # env
 .env
 
+# 機密指示書（絶対にGitHubに公開しない）
+RECOVERY_GUIDE.md
+
 # helper scripts
 *.py
