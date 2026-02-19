@@ -204,18 +204,18 @@ export default function FansPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>お名前</TableHead>
-                    <TableHead className="w-28">ティア</TableHead>
-                    <TableHead>居住エリア</TableHead>
+                    <TableHead className="whitespace-nowrap">お名前</TableHead>
+                    <TableHead className="w-20 hidden sm:table-cell">ティア</TableHead>
+                    <TableHead className="whitespace-nowrap">エリア</TableHead>
                     <TableHead className="hidden md:table-cell">メモ</TableHead>
                     <TableHead className="hidden md:table-cell">登録日</TableHead>
-                    <TableHead className="w-24">操作</TableHead>
+                    <TableHead className="w-20">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {fans.map((fan) => (
                     <TableRow key={fan.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-nowrap">
                         <Link
                           href={`/fans/${fan.id}`}
                           className="hover:underline text-primary hover:text-primary/80 transition-colors"
@@ -223,11 +223,11 @@ export default function FansPage() {
                           {fan.displayName} 様
                         </Link>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <TierBadge tier={fanTiers[fan.id] ?? null} size="sm" />
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
+                      <TableCell className="whitespace-nowrap">
+                        <Badge variant="outline" className="text-xs">
                           {AREA_LABELS[fan.residenceArea as Area] ?? fan.residenceArea}
                         </Badge>
                       </TableCell>
@@ -238,10 +238,11 @@ export default function FansPage() {
                         {format(new Date(fan.createdAt), "yyyy/MM/dd")}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
+                        <div className="flex gap-0.5">
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8"
                             onClick={() => openEditDialog(fan)}
                           >
                             <Pencil className="h-4 w-4" />
@@ -249,6 +250,7 @@ export default function FansPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8"
                             onClick={() => {
                               setDeletingFan(fan);
                               setDeleteDialogOpen(true);
