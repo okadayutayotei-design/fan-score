@@ -152,23 +152,24 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stat Cards - clickable */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-2 sm:gap-4 grid-cols-2 md:grid-cols-4">
         {statCards.map((card) => (
           <Link key={card.key} href={card.href}>
             <Card className={`card-elevated bg-gradient-to-br ${card.bgGradient} border ${card.borderColor} cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md`}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1 sm:p-6 sm:pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                   {card.label}
                 </CardTitle>
-                <card.icon className={`h-6 w-6 ${card.iconColor}`} />
+                <card.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${card.iconColor}`} />
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{
-                  card.key === "fans" ? fanCount :
-                  card.key === "logs" ? logCount :
-                  card.key === "participants" ? "+" :
-                  "⚙"
-                }</div>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                {card.key !== "settings" && (
+                  <div className="text-2xl sm:text-3xl font-bold">{
+                    card.key === "fans" ? fanCount :
+                    card.key === "logs" ? logCount :
+                    "+"
+                  }</div>
+                )}
               </CardContent>
             </Card>
           </Link>
