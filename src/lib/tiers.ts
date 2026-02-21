@@ -31,15 +31,24 @@ export async function getTierDefinitions(): Promise<TierDefinition[]> {
 }
 
 /**
+ * Pre-sort tiers by minScore descending for efficient tier determination.
+ * Call this once, then pass the result to determineTier.
+ */
+export function sortTiersDescending(tiers: TierDefinition[]): TierDefinition[] {
+  return [...tiers].sort((a, b) => b.minScore - a.minScore);
+}
+
+/**
  * Determine which tier a fan belongs to based on their cumulative score.
  * Returns the highest-qualifying tier (highest minScore that the score exceeds).
+ * For best performance, pass pre-sorted tiers from sortTiersDescending().
  */
 export function determineTier(
   cumulativeScore: number,
-  tiers: TierDefinition[]
+  tiers: TierDefinition[],
+  preSorted = false
 ): TierDefinition | null {
-  // Sort by minScore descending so we match the highest qualifying tier first
-  const sorted = [...tiers].sort((a, b) => b.minScore - a.minScore);
+  const sorted = preSorted ? tiers : [...tiers].sort((a, b) => b.minScore - a.minScore);
   return sorted.find((t) => cumulativeScore >= t.minScore) ?? null;
 }
 

@@ -6,7 +6,7 @@ import {
   calculateCumulativeScores,
   assignRanks,
 } from "@/lib/scoring";
-import { getTierDefinitions, determineTier } from "@/lib/tiers";
+import { getTierDefinitions, determineTier, sortTiersDescending } from "@/lib/tiers";
 
 export async function GET(request: Request) {
   try {
@@ -14,8 +14,10 @@ export async function GET(request: Request) {
     const month = searchParams.get("month");
     const mode = searchParams.get("mode") || "monthly";
 
-    const [fans, settings, multipliers, tiers] = await Promise.all([
+    // Always fetch all logs once — filter for monthly in JS to avoid duplicate DB queries
+    const [fans, allLogs, settings, multipliers, tiers] = await Promise.all([
       prisma.fan.findMany(),
+      prisma.eventLog.findMany(),
       getScoringSettings(),
       getAreaMultiplierMap(),
       getTierDefinitions(),
@@ -27,35 +29,7 @@ export async function GET(request: Request) {
       residenceArea: f.residenceArea,
     }));
 
-    // Fetch logs based on mode
-    let logs;
-    if (mode === "cumulative") {
-      logs = await prisma.eventLog.findMany();
-    } else {
-      let startDate: Date;
-      let endDate: Date;
-      if (month) {
-        const [year, mon] = month.split("-").map(Number);
-        startDate = new Date(year, mon - 1, 1);
-        endDate = new Date(year, mon, 0, 23, 59, 59);
-      } else {
-        const now = new Date();
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          0,
-          23,
-          59,
-          59
-        );
-      }
-      logs = await prisma.eventLog.findMany({
-        where: { date: { gte: startDate, lte: endDate } },
-      });
-    }
-
-    const logData = logs.map((l) => ({
+    const allLogData = allLogs.map((l) => ({
       id: l.id,
       date: l.date,
       fanId: l.fanId,
@@ -66,6 +40,27 @@ export async function GET(request: Request) {
       superchatAmountJPY: l.superchatAmountJPY,
     }));
 
+    // For monthly mode, filter logs in JS; for cumulative, use all
+    let logData;
+    if (mode === "cumulative") {
+      logData = allLogData;
+    } else {
+      let startDate: Date;
+      let endDate: Date;
+      if (month) {
+        const [year, mon] = month.split("-").map(Number);
+        startDate = new Date(year, mon - 1, 1);
+        endDate = new Date(year, mon, 0, 23, 59, 59);
+      } else {
+        const now = new Date();
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      }
+      logData = allLogData.filter(
+        (l) => l.date >= startDate && l.date <= endDate
+      );
+    }
+
     const calcFn =
       mode === "cumulative"
         ? calculateCumulativeScores
@@ -73,29 +68,11 @@ export async function GET(request: Request) {
     const scores = calcFn(logData, fanData, settings, multipliers);
     const ranked = assignRanks(scores);
 
-    // Compute cumulative scores for tier determination
-    let cumulativeScores;
-    if (mode === "cumulative") {
-      cumulativeScores = scores;
-    } else {
-      const allLogs = await prisma.eventLog.findMany();
-      const allLogData = allLogs.map((l) => ({
-        id: l.id,
-        date: l.date,
-        fanId: l.fanId,
-        eventType: l.eventType,
-        venueArea: l.venueArea,
-        attendCount: l.attendCount,
-        merchAmountJPY: l.merchAmountJPY,
-        superchatAmountJPY: l.superchatAmountJPY,
-      }));
-      cumulativeScores = calculateCumulativeScores(
-        allLogData,
-        fanData,
-        settings,
-        multipliers
-      );
-    }
+    // Cumulative scores for tier — reuse allLogData (no second DB query)
+    const cumulativeScores =
+      mode === "cumulative"
+        ? scores
+        : calculateCumulativeScores(allLogData, fanData, settings, multipliers);
 
     const cumulativeMap = new Map(
       cumulativeScores.map((s) => [s.fanId, s.totalScore])
@@ -108,9 +85,11 @@ export async function GET(request: Request) {
       fanSalesMap.set(l.fanId, current + l.merchAmountJPY + l.superchatAmountJPY);
     }
 
+    const sortedTiers = sortTiersDescending(tiers);
+
     const rankedWithTier = ranked.map((r) => {
       const cumScore = cumulativeMap.get(r.fanId) ?? 0;
-      const tier = determineTier(cumScore, tiers);
+      const tier = determineTier(cumScore, sortedTiers, true);
       return {
         ...r,
         cumulativeTotalScore: cumScore,

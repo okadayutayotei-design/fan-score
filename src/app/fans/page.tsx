@@ -75,15 +75,11 @@ export default function FansPage() {
       const data = await res.json();
       setFans(data);
 
-      // Fetch tier info from ranking API (cumulative mode gives us tiers)
+      // Fetch tier info from lightweight tiers endpoint (skips ranking/sales calculation)
       try {
-        const rankRes = await fetch("/api/ranking?mode=cumulative");
-        const rankData = await rankRes.json();
-        const tierMap: Record<string, TierInfo | null> = {};
-        for (const r of rankData) {
-          tierMap[r.fanId] = r.tier ?? null;
-        }
-        setFanTiers(tierMap);
+        const tierRes = await fetch("/api/fans/tiers");
+        const tierData = await tierRes.json();
+        setFanTiers(tierData);
       } catch {
         // Tier info is optional, don't block the page
       }

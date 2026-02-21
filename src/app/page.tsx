@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AREA_LABELS, type Area } from "@/lib/constants";
 import { getScoringSettings, getAreaMultiplierMap } from "@/lib/settings";
 import { calculateMonthlyScores, calculateCumulativeScores, assignRanks } from "@/lib/scoring";
-import { getTierDefinitions, determineTier } from "@/lib/tiers";
+import { getTierDefinitions, determineTier, sortTiersDescending } from "@/lib/tiers";
 import { TierBadge } from "@/components/tier-badge";
 
 export const dynamic = "force-dynamic";
@@ -17,14 +17,9 @@ async function getDashboardData() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-  const [fanCount, logCount, logs, allLogs, fans, settings, multipliers, tiers] = await Promise.all([
+  // Fetch all logs once, then filter for monthly in JS (avoids 2 separate DB queries)
+  const [fanCount, allLogs, fans, settings, multipliers, tiers] = await Promise.all([
     prisma.fan.count(),
-    prisma.eventLog.count({
-      where: { date: { gte: startOfMonth, lte: endOfMonth } },
-    }),
-    prisma.eventLog.findMany({
-      where: { date: { gte: startOfMonth, lte: endOfMonth } },
-    }),
     prisma.eventLog.findMany(),
     prisma.fan.findMany(),
     getScoringSettings(),
@@ -38,17 +33,6 @@ async function getDashboardData() {
     residenceArea: f.residenceArea,
   }));
 
-  const logData = logs.map((l) => ({
-    id: l.id,
-    date: l.date,
-    fanId: l.fanId,
-    eventType: l.eventType,
-    venueArea: l.venueArea,
-    attendCount: l.attendCount,
-    merchAmountJPY: l.merchAmountJPY,
-    superchatAmountJPY: l.superchatAmountJPY,
-  }));
-
   const allLogData = allLogs.map((l) => ({
     id: l.id,
     date: l.date,
@@ -60,6 +44,12 @@ async function getDashboardData() {
     superchatAmountJPY: l.superchatAmountJPY,
   }));
 
+  // Filter monthly logs from the already-fetched data
+  const logData = allLogData.filter(
+    (l) => l.date >= startOfMonth && l.date <= endOfMonth
+  );
+  const logCount = logData.length;
+
   const scores = calculateMonthlyScores(logData, fanData, settings, multipliers);
   const ranked = assignRanks(scores).slice(0, 10);
 
@@ -69,14 +59,17 @@ async function getDashboardData() {
 
   // Calculate monthly sales per fan
   const fanSalesMap = new Map<string, number>();
-  for (const l of logs) {
+  for (const l of logData) {
     const current = fanSalesMap.get(l.fanId) ?? 0;
     fanSalesMap.set(l.fanId, current + l.merchAmountJPY + l.superchatAmountJPY);
   }
 
+  // Pre-sort tiers once for efficient lookups
+  const sortedTiers = sortTiersDescending(tiers);
+
   const rankedWithTier = ranked.map((r) => {
     const cumScore = cumulativeMap.get(r.fanId) ?? 0;
-    const tier = determineTier(cumScore, tiers);
+    const tier = determineTier(cumScore, sortedTiers, true);
     return {
       ...r,
       salesAmount: fanSalesMap.get(r.fanId) ?? 0,
@@ -84,14 +77,20 @@ async function getDashboardData() {
     };
   });
 
-  // Tier distribution
-  const tierDistribution = tiers.map((tier) => {
-    const count = cumulativeScores.filter((s) => {
-      const t = determineTier(s.totalScore, tiers);
-      return t?.id === tier.id;
-    }).length;
-    return { name: tier.name, color: tier.color, icon: tier.icon, count };
-  });
+  // Tier distribution - pre-compute all tiers in a single pass
+  const tierCountMap = new Map<string, number>();
+  for (const s of cumulativeScores) {
+    const t = determineTier(s.totalScore, sortedTiers, true);
+    if (t) {
+      tierCountMap.set(t.id, (tierCountMap.get(t.id) ?? 0) + 1);
+    }
+  }
+  const tierDistribution = tiers.map((tier) => ({
+    name: tier.name,
+    color: tier.color,
+    icon: tier.icon,
+    count: tierCountMap.get(tier.id) ?? 0,
+  }));
 
   return { fanCount, logCount, topRanking: rankedWithTier, tierDistribution };
 }
