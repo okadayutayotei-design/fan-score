@@ -1,8 +1,5 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,124 +22,168 @@ import {
   BarChart3,
   Sparkles,
 } from "lucide-react";
-import { toast } from "sonner";
 import { format } from "date-fns";
 import { AREA_LABELS, EVENT_TYPE_LABELS, type Area, type EventType } from "@/lib/constants";
 import { TierBadge } from "@/components/tier-badge";
 import { TierProgressBar } from "@/components/tier-progress-bar";
 import { ScoreBreakdownCard } from "@/components/score-breakdown-card";
 import { ScoreTrendChart } from "@/components/score-trend-chart";
+import { prisma } from "@/lib/prisma";
+import { getScoringSettings, getAreaMultiplierMap } from "@/lib/settings";
+import { calculateCumulativeScores } from "@/lib/scoring";
+import {
+  getTierDefinitions,
+  determineTier,
+  getNextTier,
+  calculateTierProgress,
+} from "@/lib/tiers";
 
-interface FanScoreData {
-  fan: {
-    id: string;
-    displayName: string;
-    residenceArea: string;
-    memo: string | null;
-    createdAt: string;
+export const dynamic = "force-dynamic";
+
+async function getFanScoreData(id: string) {
+  const fan = await prisma.fan.findUnique({ where: { id } });
+  if (!fan) return null;
+
+  const [allLogs, settings, multipliers, tiers] = await Promise.all([
+    prisma.eventLog.findMany({ where: { fanId: id }, orderBy: { date: "asc" } }),
+    getScoringSettings(),
+    getAreaMultiplierMap(),
+    getTierDefinitions(),
+  ]);
+
+  const fanData = [
+    { id: fan.id, displayName: fan.displayName, residenceArea: fan.residenceArea },
+  ];
+
+  const logData = allLogs.map((l) => ({
+    id: l.id,
+    date: l.date,
+    fanId: l.fanId,
+    eventType: l.eventType,
+    venueArea: l.venueArea,
+    attendCount: l.attendCount,
+    merchAmountJPY: l.merchAmountJPY,
+    superchatAmountJPY: l.superchatAmountJPY,
+  }));
+
+  // Cumulative score
+  const cumulativeResults = calculateCumulativeScores(logData, fanData, settings, multipliers);
+  const cumulativeScore = cumulativeResults[0] ?? {
+    totalScore: 0, actionScore: 0, moneyScore: 0, travelContribution: 0,
   };
-  cumulativeScore: {
-    totalScore: number;
-    actionScore: number;
-    moneyScore: number;
-    travelContribution: number;
+
+  // Current month score
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const monthlyLogs = logData.filter((l) => l.date >= startOfMonth && l.date <= endOfMonth);
+  const monthlyResults = calculateCumulativeScores(monthlyLogs, fanData, settings, multipliers);
+  const currentMonthScore = monthlyResults[0] ?? {
+    totalScore: 0, actionScore: 0, moneyScore: 0, travelContribution: 0,
   };
-  currentMonthScore: {
-    totalScore: number;
-    actionScore: number;
-    moneyScore: number;
-    travelContribution: number;
-  };
-  currentTier: {
-    id: string;
-    name: string;
-    slug: string;
-    color: string;
-    icon: string;
-    minScore: number;
-    sortOrder: number;
-    description: string | null;
-    benefits: { id: string; title: string; description: string | null }[];
-  } | null;
-  nextTier: {
-    name: string;
-    color: string;
-    minScore: number;
-  } | null;
-  tierProgress: number;
-  monthlyHistory: {
+
+  // Tier info
+  const currentTier = determineTier(cumulativeScore.totalScore, tiers);
+  const nextTier = getNextTier(currentTier, tiers);
+  const tierProgress = calculateTierProgress(cumulativeScore.totalScore, currentTier, nextTier);
+
+  // Monthly history (last 12 months) — single-pass grouping instead of 12x filter
+  const monthlyMap = new Map<string, typeof logData>();
+  for (const log of logData) {
+    const d = log.date;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const arr = monthlyMap.get(key) ?? [];
+    arr.push(log);
+    monthlyMap.set(key, arr);
+  }
+
+  const monthlyHistory: {
     month: string;
     totalScore: number;
     actionScore: number;
     moneyScore: number;
     travelContribution: number;
-  }[];
-  recentLogs: {
-    id: string;
-    date: string;
-    eventType: string;
-    venueArea: string;
-    attendCount: number;
-    merchAmountJPY: number;
-    superchatAmountJPY: number;
-    note: string | null;
-  }[];
-  stats: {
-    totalEvents: number;
-    totalMerchSpent: number;
-    totalSuperchatSpent: number;
-    firstEventDate: string | null;
-    lastEventDate: string | null;
-    eventTypeBreakdown: Record<string, number>;
+  }[] = [];
+
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const mMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const mLogs = monthlyMap.get(mMonth);
+
+    if (mLogs && mLogs.length > 0) {
+      const mResults = calculateCumulativeScores(mLogs, fanData, settings, multipliers);
+      const r = mResults[0];
+      monthlyHistory.push({
+        month: mMonth,
+        totalScore: r?.totalScore ?? 0,
+        actionScore: r?.actionScore ?? 0,
+        moneyScore: r?.moneyScore ?? 0,
+        travelContribution: r?.travelContribution ?? 0,
+      });
+    } else {
+      monthlyHistory.push({
+        month: mMonth, totalScore: 0, actionScore: 0, moneyScore: 0, travelContribution: 0,
+      });
+    }
+  }
+
+  // Recent logs (last 20)
+  const recentLogs = allLogs.slice(-20).reverse();
+
+  // Stats
+  const totalMerchSpent = allLogs.reduce((s, l) => s + l.merchAmountJPY, 0);
+  const totalSuperchatSpent = allLogs.reduce((s, l) => s + l.superchatAmountJPY, 0);
+  const eventTypeBreakdown: Record<string, number> = {};
+  for (const log of allLogs) {
+    eventTypeBreakdown[log.eventType] = (eventTypeBreakdown[log.eventType] ?? 0) + 1;
+  }
+
+  return {
+    fan: {
+      id: fan.id,
+      displayName: fan.displayName,
+      residenceArea: fan.residenceArea,
+      memo: fan.memo,
+      createdAt: fan.createdAt,
+    },
+    cumulativeScore: {
+      totalScore: cumulativeScore.totalScore,
+      actionScore: cumulativeScore.actionScore,
+      moneyScore: cumulativeScore.moneyScore,
+      travelContribution: cumulativeScore.travelContribution,
+    },
+    currentMonthScore: {
+      totalScore: currentMonthScore.totalScore,
+      actionScore: currentMonthScore.actionScore,
+      moneyScore: currentMonthScore.moneyScore,
+      travelContribution: currentMonthScore.travelContribution,
+    },
+    currentTier,
+    nextTier,
+    tierProgress,
+    monthlyHistory,
+    recentLogs,
+    stats: {
+      totalEvents: allLogs.length,
+      totalMerchSpent,
+      totalSuperchatSpent,
+      firstEventDate: allLogs.length > 0 ? allLogs[0].date : null,
+      lastEventDate: allLogs.length > 0 ? allLogs[allLogs.length - 1].date : null,
+      eventTypeBreakdown,
+    },
   };
 }
 
-export default function FanDetailPage() {
-  const params = useParams();
-  const fanId = params.id as string;
-  const [data, setData] = useState<FanScoreData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/fans/${fanId}/score`);
-      if (!res.ok) throw new Error("fetch failed");
-      const json = await res.json();
-      setData(json);
-    } catch {
-      toast.error("お客様情報の取得に失敗しました");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fanId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">読み込み中...</p>
-      </div>
-    );
-  }
+export default async function FanDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const data = await getFanScoreData(id);
 
   if (!data) {
-    return (
-      <div className="space-y-4">
-        <Link href="/fans">
-          <Button variant="ghost" size="sm" className="gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            お客様一覧に戻る
-          </Button>
-        </Link>
-        <p className="text-center text-muted-foreground py-10">
-          お客様情報が見つかりませんでした
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   const { fan, cumulativeScore, currentMonthScore, currentTier, nextTier, tierProgress, monthlyHistory, recentLogs, stats } = data;
@@ -185,7 +226,7 @@ export default function FanDetailPage() {
         </div>
       </div>
 
-      {/* Stats Summary - 売上・参加概要 */}
+      {/* Stats Summary */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card className="card-elevated bg-gradient-to-br from-blue-500/5 to-transparent border-blue-100">
           <CardContent className="pt-5 pb-4">

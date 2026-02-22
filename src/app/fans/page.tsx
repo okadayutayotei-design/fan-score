@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,7 @@ export default function FansPage() {
   const [fans, setFans] = useState<Fan[]>([]);
   const [fanTiers, setFanTiers] = useState<Record<string, TierInfo | null>>({});
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -65,30 +66,32 @@ export default function FansPage() {
     residenceArea: "",
     memo: "",
   });
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Debounce search input (300ms)
+  useEffect(() => {
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search]);
 
   const fetchFans = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      params.set("includeTiers", "1");
       const res = await fetch(`/api/fans?${params}`);
       const data = await res.json();
-      setFans(data);
-
-      // Fetch tier info from lightweight tiers endpoint (skips ranking/sales calculation)
-      try {
-        const tierRes = await fetch("/api/fans/tiers");
-        const tierData = await tierRes.json();
-        setFanTiers(tierData);
-      } catch {
-        // Tier info is optional, don't block the page
-      }
+      setFans(data.fans);
+      setFanTiers(data.tiers ?? {});
     } catch {
       toast.error("ファンの取得に失敗しました");
     } finally {
       setIsLoading(false);
     }
-  }, [search]);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchFans();

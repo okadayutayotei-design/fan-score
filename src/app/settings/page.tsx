@@ -189,13 +189,15 @@ export default function SettingsPage() {
         { key: "diminishingReturns", value: diminishing },
       ];
 
-      for (const update of updates) {
-        await fetch("/api/settings", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(update),
-        });
-      }
+      await Promise.all(
+        updates.map((update) =>
+          fetch("/api/settings", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(update),
+          })
+        )
+      );
 
       toast.success("設定を保存しました");
     } catch {

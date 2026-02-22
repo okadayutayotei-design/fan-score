@@ -93,7 +93,16 @@ export async function GET(
       nextTier
     );
 
-    // Monthly history (last 12 months)
+    // Monthly history (last 12 months) — single-pass grouping instead of 12x filter
+    const monthlyMap = new Map<string, typeof logData>();
+    for (const log of logData) {
+      const d = log.date;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const arr = monthlyMap.get(key) ?? [];
+      arr.push(log);
+      monthlyMap.set(key, arr);
+    }
+
     const monthlyHistory: {
       month: string;
       totalScore: number;
@@ -104,12 +113,10 @@ export async function GET(
 
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
-      const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-      const mLogs = logData.filter((l) => l.date >= mStart && l.date <= mEnd);
       const mMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const mLogs = monthlyMap.get(mMonth);
 
-      if (mLogs.length > 0) {
+      if (mLogs && mLogs.length > 0) {
         const mResults = calculateCumulativeScores(
           mLogs,
           fanData,

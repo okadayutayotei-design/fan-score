@@ -18,14 +18,15 @@ async function getDashboardData() {
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
   // Fetch all logs once, then filter for monthly in JS (avoids 2 separate DB queries)
-  const [fanCount, allLogs, fans, settings, multipliers, tiers] = await Promise.all([
-    prisma.fan.count(),
+  const [allLogs, fans, settings, multipliers, tiers] = await Promise.all([
     prisma.eventLog.findMany(),
     prisma.fan.findMany(),
     getScoringSettings(),
     getAreaMultiplierMap(),
     getTierDefinitions(),
   ]);
+
+  const fanCount = fans.length;
 
   const fanData = fans.map((f) => ({
     id: f.id,
