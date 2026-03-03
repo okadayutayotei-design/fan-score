@@ -14,46 +14,58 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(145deg, #1e3a8a 0%, #3b82f6 40%, #06b6d4 100%)",
+          background: "linear-gradient(160deg, #0f2557 0%, #1a3a7a 35%, #1e4494 70%, #1a3570 100%)",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Glow accent - top right */}
+        {/* Subtle top-right glow */}
         <div
           style={{
             position: "absolute",
-            top: "-30px",
-            right: "-30px",
-            width: "100px",
-            height: "100px",
+            top: "-20px",
+            right: "-20px",
+            width: "90px",
+            height: "90px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(56,189,248,0.5) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)",
             display: "flex",
           }}
         />
-        {/* Glow accent - bottom left */}
+        {/* Subtle bottom-left glow */}
         <div
           style={{
             position: "absolute",
-            bottom: "-20px",
-            left: "-20px",
-            width: "80px",
-            height: "80px",
+            bottom: "-15px",
+            left: "-15px",
+            width: "70px",
+            height: "70px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)",
             display: "flex",
           }}
         />
-        {/* Diagonal light streak */}
+        {/* Top decorative line */}
         <div
           style={{
             position: "absolute",
-            top: "0",
-            left: "0",
-            width: "100%",
-            height: "100%",
-            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(255,255,255,0.04) 100%)",
+            top: "28px",
+            left: "40px",
+            right: "40px",
+            height: "1px",
+            background: "rgba(255,255,255,0.2)",
+            display: "flex",
+          }}
+        />
+        {/* Bottom decorative line */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "28px",
+            left: "40px",
+            right: "40px",
+            height: "1px",
+            background: "rgba(255,255,255,0.2)",
             display: "flex",
           }}
         />
@@ -67,33 +79,42 @@ export default function AppleIcon() {
             gap: "0px",
           }}
         >
-          {/* Abstract score meter / rising bars */}
+          {/* O.M.E text */}
           <div
             style={{
               display: "flex",
-              alignItems: "flex-end",
-              gap: "5px",
-              marginBottom: "6px",
-            }}
-          >
-            <div style={{ width: "10px", height: "22px", borderRadius: "3px", background: "rgba(255,255,255,0.35)", display: "flex" }} />
-            <div style={{ width: "10px", height: "34px", borderRadius: "3px", background: "rgba(255,255,255,0.5)", display: "flex" }} />
-            <div style={{ width: "10px", height: "50px", borderRadius: "3px", background: "rgba(255,255,255,0.7)", display: "flex" }} />
-            <div style={{ width: "10px", height: "42px", borderRadius: "3px", background: "linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)", display: "flex" }} />
-            <div style={{ width: "10px", height: "60px", borderRadius: "3px", background: "linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)", display: "flex" }} />
-          </div>
-          {/* Text */}
-          <div
-            style={{
-              display: "flex",
-              fontSize: "42px",
-              fontWeight: 900,
+              fontSize: "46px",
+              fontWeight: 800,
               color: "white",
-              letterSpacing: "-2px",
+              letterSpacing: "2px",
               lineHeight: 1,
             }}
           >
-            FS
+            O.M.E
+          </div>
+          {/* Separator line */}
+          <div
+            style={{
+              width: "60px",
+              height: "2px",
+              background: "linear-gradient(90deg, transparent, rgba(96,165,250,0.8), transparent)",
+              marginTop: "8px",
+              marginBottom: "8px",
+              display: "flex",
+            }}
+          />
+          {/* FanScore sub-text */}
+          <div
+            style={{
+              display: "flex",
+              fontSize: "22px",
+              fontWeight: 600,
+              color: "rgba(147,197,253,0.9)",
+              letterSpacing: "3px",
+              lineHeight: 1,
+            }}
+          >
+            FanScore
           </div>
         </div>
       </div>
