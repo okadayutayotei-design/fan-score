@@ -102,17 +102,24 @@ export default function RankingPage() {
       ? "salesAmount"
       : "totalScore";
 
-  const sortedRanking = [...ranking].sort((a, b) => b[scoreKey] - a[scoreKey]);
+  // Round score values to match display (1 decimal for scores, exact for integers)
+  const displayValue = (fan: RankedFan) => {
+    const v = fan[scoreKey];
+    return scoreKey === "totalAttendCount" || scoreKey === "salesAmount"
+      ? v
+      : Math.round(v * 10) / 10;
+  };
 
-  // Re-assign ranks: same value = same rank
+  const sortedRanking = [...ranking].sort((a, b) => displayValue(b) - displayValue(a));
+
+  // Re-assign ranks: same display value = same rank
   const finalRanking: (RankedFan & { displayRank: number })[] = [];
   let currentRank = 1;
   for (let i = 0; i < sortedRanking.length; i++) {
-    const item = sortedRanking[i];
-    if (i > 0 && item[scoreKey] !== sortedRanking[i - 1][scoreKey]) {
+    if (i > 0 && displayValue(sortedRanking[i]) !== displayValue(sortedRanking[i - 1])) {
       currentRank = i + 1;
     }
-    finalRanking.push({ ...item, displayRank: currentRank });
+    finalRanking.push({ ...sortedRanking[i], displayRank: currentRank });
   }
 
   const [yyyy, mm] = month.split("-");
