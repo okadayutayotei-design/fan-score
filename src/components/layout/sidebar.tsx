@@ -104,7 +104,6 @@ export function Sidebar() {
           <span className="font-bold">O.M.E FanScore</span>
         </div>
       </div>
-      <div className="md:hidden h-16" />
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-card">
