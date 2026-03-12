@@ -3,27 +3,29 @@ import { prisma } from "@/lib/prisma";
 import { parseCSV, csvToObjects } from "@/lib/csv-parser";
 
 const VALID_AREAS = [
-  "KOBE",
-  "OSAKA",
-  "NARA",
+  "KINKI",
   "TOKYO",
   "MITO",
   "SHIKOKU",
   "OTHER",
 ];
 
-// エリアラベル→コード変換マップ
+// エリアラベル→コード変換マップ（旧エリア名も後方互換で対応）
 const AREA_LABEL_MAP: Record<string, string> = {
-  神戸: "KOBE",
-  大阪: "OSAKA",
-  奈良: "NARA",
+  近畿: "KINKI",
+  神戸: "KINKI",
+  大阪: "KINKI",
+  京都: "KINKI",
+  奈良: "KINKI",
   東京: "TOKYO",
   水戸: "MITO",
   四国: "SHIKOKU",
   その他: "OTHER",
-  KOBE: "KOBE",
-  OSAKA: "OSAKA",
-  NARA: "NARA",
+  KINKI: "KINKI",
+  KOBE: "KINKI",
+  OSAKA: "KINKI",
+  KYOTO: "KINKI",
+  NARA: "KINKI",
   TOKYO: "TOKYO",
   MITO: "MITO",
   SHIKOKU: "SHIKOKU",

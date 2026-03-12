@@ -2,50 +2,24 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-const AREAS = ["KOBE", "OSAKA", "NARA", "TOKYO", "MITO", "SHIKOKU", "OTHER", "ONLINE"];
+const AREAS = ["KINKI", "TOKYO", "MITO", "SHIKOKU", "OTHER", "ONLINE"];
 
 const multiplierPairs: [string, string, number][] = [
-  // Same area
+  // Same area = no bonus
   ...AREAS.filter(a => a !== "ONLINE").map(a => [a, a, 1.0] as [string, string, number]),
   // ONLINE is always 1.0
   ...AREAS.map(a => [a, "ONLINE", 1.0] as [string, string, number]),
   ...AREAS.filter(a => a !== "ONLINE").map(a => ["ONLINE", a, 1.0] as [string, string, number]),
 
-  // KOBE combinations
-  ["KOBE", "OSAKA", 1.2],
-  ["OSAKA", "KOBE", 1.2],
-  ["KOBE", "NARA", 1.2],
-  ["NARA", "KOBE", 1.2],
-  ["KOBE", "SHIKOKU", 1.35],
-  ["SHIKOKU", "KOBE", 1.35],
-  ["KOBE", "TOKYO", 1.6],
-  ["TOKYO", "KOBE", 1.6],
-  ["KOBE", "MITO", 1.7],
-  ["MITO", "KOBE", 1.7],
-  ["KOBE", "OTHER", 1.3],
-  ["OTHER", "KOBE", 1.3],
-
-  // OSAKA combinations
-  ["OSAKA", "NARA", 1.1],
-  ["NARA", "OSAKA", 1.1],
-  ["OSAKA", "SHIKOKU", 1.25],
-  ["SHIKOKU", "OSAKA", 1.25],
-  ["OSAKA", "TOKYO", 1.5],
-  ["TOKYO", "OSAKA", 1.5],
-  ["OSAKA", "MITO", 1.6],
-  ["MITO", "OSAKA", 1.6],
-  ["OSAKA", "OTHER", 1.25],
-  ["OTHER", "OSAKA", 1.25],
-
-  // NARA combinations
-  ["NARA", "SHIKOKU", 1.3],
-  ["SHIKOKU", "NARA", 1.3],
-  ["NARA", "TOKYO", 1.5],
-  ["TOKYO", "NARA", 1.5],
-  ["NARA", "MITO", 1.6],
-  ["MITO", "NARA", 1.6],
-  ["NARA", "OTHER", 1.25],
-  ["OTHER", "NARA", 1.25],
+  // KINKI combinations (近畿圏内は1.0、外部からのみボーナス)
+  ["KINKI", "SHIKOKU", 1.35],
+  ["SHIKOKU", "KINKI", 1.35],
+  ["KINKI", "TOKYO", 1.6],
+  ["TOKYO", "KINKI", 1.6],
+  ["KINKI", "MITO", 1.7],
+  ["MITO", "KINKI", 1.7],
+  ["KINKI", "OTHER", 1.3],
+  ["OTHER", "KINKI", 1.3],
 
   // TOKYO combinations
   ["TOKYO", "SHIKOKU", 1.5],
@@ -64,9 +38,6 @@ const multiplierPairs: [string, string, number][] = [
   // SHIKOKU combinations
   ["SHIKOKU", "OTHER", 1.3],
   ["OTHER", "SHIKOKU", 1.3],
-
-  // OTHER
-  ["OTHER", "OTHER", 1.0],
 ];
 
 const defaultTiers = [

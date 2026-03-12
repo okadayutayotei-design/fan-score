@@ -102,6 +102,8 @@ export default function RankingPage() {
         return b.moneyScore - a.moneyScore;
       case "action":
         return b.actionScore - a.actionScore;
+      case "sales":
+        return b.salesAmount - a.salesAmount;
       default:
         return b.totalScore - a.totalScore;
     }
@@ -118,6 +120,8 @@ export default function RankingPage() {
         ? "moneyScore"
         : activeTab === "action"
         ? "actionScore"
+        : activeTab === "sales"
+        ? "salesAmount"
         : "totalScore";
     let rank = i + 1;
     if (i > 0 && item[scoreKey] === sortedRanking[i - 1][scoreKey]) {
@@ -187,6 +191,7 @@ export default function RankingPage() {
               <TabsTrigger value="action">参加貢献</TabsTrigger>
               <TabsTrigger value="travel">遠征貢献</TabsTrigger>
               <TabsTrigger value="money">支払い貢献</TabsTrigger>
+              <TabsTrigger value="sales">売上金額</TabsTrigger>
             </TabsList>
 
             {isLoading ? (
@@ -219,11 +224,15 @@ export default function RankingPage() {
                           ? "参加スコア"
                           : activeTab === "travel"
                           ? "遠征貢献"
+                          : activeTab === "sales"
+                          ? "売上金額"
                           : "支払いスコア"}
                       </TableHead>
+                      {activeTab !== "sales" && (
                       <TableHead className="text-right">
                         売上金額
                       </TableHead>
+                      )}
                       {activeTab === "total" && (
                         <>
                           <TableHead className="text-right hidden sm:table-cell">
@@ -280,20 +289,32 @@ export default function RankingPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-bold text-lg text-primary">
-                            {activeTab === "total"
-                              ? fan.totalScore.toFixed(1)
-                              : activeTab === "action"
-                              ? fan.actionScore.toFixed(1)
-                              : activeTab === "travel"
-                              ? fan.travelContribution.toFixed(1)
-                              : fan.moneyScore.toFixed(1)}
-                            <span className="text-xs font-normal ml-0.5">pt</span>
+                            {activeTab === "sales" ? (
+                              <>
+                                {fan.salesAmount > 0
+                                  ? `¥${fan.salesAmount.toLocaleString()}`
+                                  : "-"}
+                              </>
+                            ) : (
+                              <>
+                                {activeTab === "total"
+                                  ? fan.totalScore.toFixed(1)
+                                  : activeTab === "action"
+                                  ? fan.actionScore.toFixed(1)
+                                  : activeTab === "travel"
+                                  ? fan.travelContribution.toFixed(1)
+                                  : fan.moneyScore.toFixed(1)}
+                                <span className="text-xs font-normal ml-0.5">pt</span>
+                              </>
+                            )}
                           </TableCell>
+                          {activeTab !== "sales" && (
                           <TableCell className="text-right font-bold text-base text-emerald-600">
                             {fan.salesAmount > 0
                               ? `¥${fan.salesAmount.toLocaleString()}`
                               : "-"}
                           </TableCell>
+                          )}
                           {activeTab === "total" && (
                             <>
                               <TableCell className="text-right text-muted-foreground hidden sm:table-cell">
