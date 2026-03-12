@@ -95,32 +95,24 @@ export default function RankingPage() {
   }, [fetchRanking]);
 
   // Sort based on active tab
-  const sortedRanking = [...ranking].sort((a, b) => {
-    switch (activeTab) {
-      case "attend":
-        return b.totalAttendCount - a.totalAttendCount;
-      case "sales":
-        return b.salesAmount - a.salesAmount;
-      default:
-        return b.totalScore - a.totalScore;
-    }
-  });
+  const scoreKey =
+    activeTab === "attend"
+      ? "totalAttendCount"
+      : activeTab === "sales"
+      ? "salesAmount"
+      : "totalScore";
 
-  // Re-assign ranks based on current sort
+  const sortedRanking = [...ranking].sort((a, b) => b[scoreKey] - a[scoreKey]);
+
+  // Re-assign ranks: same value = same rank
   const finalRanking: (RankedFan & { displayRank: number })[] = [];
+  let currentRank = 1;
   for (let i = 0; i < sortedRanking.length; i++) {
     const item = sortedRanking[i];
-    const scoreKey =
-      activeTab === "attend"
-        ? "totalAttendCount"
-        : activeTab === "sales"
-        ? "salesAmount"
-        : "totalScore";
-    let rank = i + 1;
-    if (i > 0 && item[scoreKey] === sortedRanking[i - 1][scoreKey]) {
-      rank = finalRanking[i - 1].displayRank;
+    if (i > 0 && item[scoreKey] !== sortedRanking[i - 1][scoreKey]) {
+      currentRank = i + 1;
     }
-    finalRanking.push({ ...item, displayRank: rank });
+    finalRanking.push({ ...item, displayRank: currentRank });
   }
 
   const [yyyy, mm] = month.split("-");
