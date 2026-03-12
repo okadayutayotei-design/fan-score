@@ -1,6 +1,7 @@
 export const AREAS = [
   "KOBE",
   "OSAKA",
+  "KYOTO",
   "NARA",
   "TOKYO",
   "MITO",
@@ -14,6 +15,7 @@ export type Area = (typeof AREAS)[number];
 export const AREA_LABELS: Record<Area, string> = {
   KOBE: "神戸",
   OSAKA: "大阪",
+  KYOTO: "京都",
   NARA: "奈良",
   TOKYO: "東京",
   MITO: "水戸",
