@@ -78,11 +78,14 @@ export async function GET(request: Request) {
       cumulativeScores.map((s) => [s.fanId, s.totalScore])
     );
 
-    // Calculate sales amounts per fan
+    // Calculate sales amounts and attendance counts per fan
     const fanSalesMap = new Map<string, number>();
+    const fanAttendMap = new Map<string, number>();
     for (const l of logData) {
-      const current = fanSalesMap.get(l.fanId) ?? 0;
-      fanSalesMap.set(l.fanId, current + l.merchAmountJPY + l.superchatAmountJPY);
+      const currentSales = fanSalesMap.get(l.fanId) ?? 0;
+      fanSalesMap.set(l.fanId, currentSales + l.merchAmountJPY + l.superchatAmountJPY);
+      const currentAttend = fanAttendMap.get(l.fanId) ?? 0;
+      fanAttendMap.set(l.fanId, currentAttend + l.attendCount);
     }
 
     const sortedTiers = sortTiersDescending(tiers);
@@ -94,6 +97,7 @@ export async function GET(request: Request) {
         ...r,
         cumulativeTotalScore: cumScore,
         salesAmount: fanSalesMap.get(r.fanId) ?? 0,
+        totalAttendCount: fanAttendMap.get(r.fanId) ?? 0,
         tier: tier
           ? {
               name: tier.name,

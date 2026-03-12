@@ -31,6 +31,7 @@ interface RankedFan {
   travelContribution: number;
   cumulativeTotalScore: number;
   salesAmount: number;
+  totalAttendCount: number;
   tier: {
     name: string;
     slug: string;
@@ -96,12 +97,8 @@ export default function RankingPage() {
   // Sort based on active tab
   const sortedRanking = [...ranking].sort((a, b) => {
     switch (activeTab) {
-      case "travel":
-        return b.travelContribution - a.travelContribution;
-      case "money":
-        return b.moneyScore - a.moneyScore;
-      case "action":
-        return b.actionScore - a.actionScore;
+      case "attend":
+        return b.totalAttendCount - a.totalAttendCount;
       case "sales":
         return b.salesAmount - a.salesAmount;
       default:
@@ -114,12 +111,8 @@ export default function RankingPage() {
   for (let i = 0; i < sortedRanking.length; i++) {
     const item = sortedRanking[i];
     const scoreKey =
-      activeTab === "travel"
-        ? "travelContribution"
-        : activeTab === "money"
-        ? "moneyScore"
-        : activeTab === "action"
-        ? "actionScore"
+      activeTab === "attend"
+        ? "totalAttendCount"
         : activeTab === "sales"
         ? "salesAmount"
         : "totalScore";
@@ -146,7 +139,6 @@ export default function RankingPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        {/* Mode Toggle - larger and more colorful */}
         <div className="flex rounded-xl border-2 overflow-hidden">
           <button
             className={`px-5 py-2 text-sm font-semibold transition-all duration-200 ${
@@ -188,9 +180,7 @@ export default function RankingPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="total">総合</TabsTrigger>
-              <TabsTrigger value="action">参加貢献</TabsTrigger>
-              <TabsTrigger value="travel">遠征貢献</TabsTrigger>
-              <TabsTrigger value="money">支払い貢献</TabsTrigger>
+              <TabsTrigger value="attend">来場回数</TabsTrigger>
               <TabsTrigger value="sales">売上金額</TabsTrigger>
             </TabsList>
 
@@ -214,38 +204,14 @@ export default function RankingPage() {
                       <TableHead className="hidden md:table-cell w-28">
                         ティア
                       </TableHead>
-                      <TableHead className="hidden md:table-cell">
+                      <TableHead className="hidden lg:table-cell">
                         居住地
                       </TableHead>
-                      <TableHead className="text-right">
-                        {activeTab === "total"
-                          ? "総合スコア"
-                          : activeTab === "action"
-                          ? "参加スコア"
-                          : activeTab === "travel"
-                          ? "遠征貢献"
-                          : activeTab === "sales"
-                          ? "売上金額"
-                          : "支払いスコア"}
+                      <TableHead className="text-right">回数</TableHead>
+                      <TableHead className="text-right">金額合計</TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">
+                        スコア
                       </TableHead>
-                      {activeTab !== "sales" && (
-                      <TableHead className="text-right">
-                        売上金額
-                      </TableHead>
-                      )}
-                      {activeTab === "total" && (
-                        <>
-                          <TableHead className="text-right hidden sm:table-cell">
-                            参加
-                          </TableHead>
-                          <TableHead className="text-right hidden sm:table-cell">
-                            支払い
-                          </TableHead>
-                          <TableHead className="text-right hidden lg:table-cell">
-                            遠征
-                          </TableHead>
-                        </>
-                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -274,7 +240,6 @@ export default function RankingPage() {
                             >
                               {fan.displayName} 様
                             </Link>
-                            {/* Mobile: show tier inline */}
                             <div className="md:hidden mt-1">
                               <TierBadge tier={fan.tier} size="sm" />
                             </div>
@@ -282,52 +247,26 @@ export default function RankingPage() {
                           <TableCell className="hidden md:table-cell">
                             <TierBadge tier={fan.tier} size="sm" />
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
+                          <TableCell className="hidden lg:table-cell">
                             <Badge variant="outline">
                               {AREA_LABELS[fan.residenceArea as Area] ??
                                 fan.residenceArea}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-bold text-lg text-primary">
-                            {activeTab === "sales" ? (
-                              <>
-                                {fan.salesAmount > 0
-                                  ? `¥${fan.salesAmount.toLocaleString()}`
-                                  : "-"}
-                              </>
-                            ) : (
-                              <>
-                                {activeTab === "total"
-                                  ? fan.totalScore.toFixed(1)
-                                  : activeTab === "action"
-                                  ? fan.actionScore.toFixed(1)
-                                  : activeTab === "travel"
-                                  ? fan.travelContribution.toFixed(1)
-                                  : fan.moneyScore.toFixed(1)}
-                                <span className="text-xs font-normal ml-0.5">pt</span>
-                              </>
-                            )}
+                          <TableCell className={`text-right font-bold text-lg ${activeTab === "attend" ? "text-primary" : ""}`}>
+                            {fan.totalAttendCount > 0
+                              ? `${fan.totalAttendCount}回`
+                              : "-"}
                           </TableCell>
-                          {activeTab !== "sales" && (
-                          <TableCell className="text-right font-bold text-base text-emerald-600">
+                          <TableCell className={`text-right font-bold text-lg ${activeTab === "sales" ? "text-primary" : "text-emerald-600"}`}>
                             {fan.salesAmount > 0
                               ? `¥${fan.salesAmount.toLocaleString()}`
                               : "-"}
                           </TableCell>
-                          )}
-                          {activeTab === "total" && (
-                            <>
-                              <TableCell className="text-right text-muted-foreground hidden sm:table-cell">
-                                {fan.actionScore.toFixed(1)}
-                              </TableCell>
-                              <TableCell className="text-right text-muted-foreground hidden sm:table-cell">
-                                {fan.moneyScore.toFixed(1)}
-                              </TableCell>
-                              <TableCell className="text-right text-muted-foreground hidden lg:table-cell">
-                                {fan.travelContribution.toFixed(1)}
-                              </TableCell>
-                            </>
-                          )}
+                          <TableCell className={`text-right hidden sm:table-cell font-medium ${activeTab === "total" ? "text-primary font-bold text-lg" : "text-muted-foreground"}`}>
+                            {fan.totalScore.toFixed(1)}
+                            <span className="text-xs font-normal ml-0.5">pt</span>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
